@@ -3,7 +3,7 @@ server:
 resilience4j.bulkhead:
   instances:
     queryServerBulkhead:
-      max-concurrent-calls: 3
+      max-concurrent-calls: 10
       max-wait-duration: 0
 management:
   endpoints:

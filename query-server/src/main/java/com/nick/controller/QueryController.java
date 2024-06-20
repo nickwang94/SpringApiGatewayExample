@@ -10,11 +10,11 @@ public class QueryController {
     @RequestMapping("/dataset")
     public String queryDataSet(@RequestParam("dataSet") String dataSet) {
         try {
-            Thread.sleep(1000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println("TEST");
+        System.out.println("Finished: " + dataSet);
         return "dataSet: " + dataSet;
     }
 
