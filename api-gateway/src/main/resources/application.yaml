@@ -1,11 +1,21 @@
 server:
   port: 8888
+resilience4j.bulkhead:
+  instances:
+    queryServerBulkhead:
+      max-concurrent-calls: 3
+      max-wait-duration: 0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  metrics:
+    enable:
+      all: true
 spring:
   application:
     name: api-gateway
-  redis:
-    host: 127.0.0.1
-    port: 6379
   cloud:
     gateway:
       discovery:
@@ -13,68 +23,12 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-#        - id: queryToBackupPort
-#          uri: lb://query-server-2
-#          predicates:
-#            - Path=/query/**
-#            - Weight=QueryServer,4
         - id: queryToDefaultPort
           uri: lb://query-server
           predicates:
             - Path=/query/**
-            # 必须包含请求参数的名称，但是 Service 不一定要有，这里只是一种规则
-            # 逗号后表示其值必须是 fx 开头
-            - Query=username,admin
-            # 如果要限制参数数字个数，可以使用\d正则
-            # 但是由于\d{1,2}中的逗号会被认为是值的结尾，但是正则失败，可以使用其具体类的值来注入
-            - name: Query
-              args:
-                param: version
-                regexp: \d{1,2}
-            - Header=Connection,keep-alive
-            - Method=GET,POST
-            - RemoteAddr=127.0.0.1
-            # ? 匹配一个字符
-            # * 匹配 0 个或多个字符
-            # ** 匹配 0 个或多个目录
-            - Host=127.0.0.1:8888
-            # 值是键值对, 逗号分割后接正则
-#            - Cookie=token,.{3}
-            # Before, Between, After
-            # 表示时间，格式标准 UTC
-            # yyyy-MM-ddThh:mm:ss.SSS+08:00[Asia/Shanghai]
-            - Before=2025-06-18T19:23:59.000+08:00[Asia/Shanghai]
-            # 负载均衡权重，默认轮训，权重是概率性的
-            # 如果 lb:// 后面是相同的服务，默认就直接会负载均衡
-            # 首先需要两个routes，然后第一个参数是 groupName，第二个是权重
-            - Weight=QueryServer,1
-          # Filter的作用是在路由转发之前，或者代理服务返回之后额外做的事情
-          # Filter执行一定说明了谓词条件通过了
-          # 内置 Filter，GatewayFilter 实现类
           filters:
-#            - StripPrefix=1
-            - AddRequestParameter=dataSet,test.dataSet
-            # any fake authentication for test, admin, admin
             - AddRequestHeader=Authorization,Basic YWRtaW46YWRtaW4=
-#            - AddResponseHeader=Path, AGW
-#            - AddResponseHeader=Path, Dup
-            # 去除指定响应头重复项
-            # 响应头,strategy
-            # RETAIN_FIRST, RETAIN_LAST, RETAIN_UNIQUE
-#            - DedupeResponseHeader=Path,RETAIN_FIRST
-            - name: RequestRateLimiter
-              args:
-                key-resolver: '#{@rateLimiterComponent}'
-                # 每秒往桶里放置令牌数，即平均 QPS
-                redis-rate-limiter.replenishRate: 1
-                # 桶容量，即最大可承受的 QPS
-                redis-rate-limiter.burstCapacity: 3
-            - name: CircuitBreaker
-              args:
-                name: myCircuitBreaker
-                fallbackUri: forward:/query/dataset/fallback
-            - name: Customer
-              args:
-                name: testName
-                age: 30
+            - Bulkhead
+
 

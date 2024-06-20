@@ -9,6 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class QueryController {
     @RequestMapping("/dataset")
     public String queryDataSet(@RequestParam("dataSet") String dataSet) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("TEST");
         return "dataSet: " + dataSet;
     }
 
